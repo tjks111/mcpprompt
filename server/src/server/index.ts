@@ -48,7 +48,7 @@ export class ServerManager {
       if (this.transportManager.isStdio()) {
         await this.startStdioServer();
       } else if (this.transportManager.isSse()) {
-        await this.startSseServer();
+        await this.startStreamableHttpServer();
       } else {
         throw new Error(
           `Unsupported transport type: ${this.transportManager.getTransportType()}`
@@ -73,16 +73,16 @@ export class ServerManager {
   /**
    * Start server with SSE transport
    */
-  private async startSseServer(): Promise<void> {
+  private async startStreamableHttpServer(): Promise<void> {
     if (!this.apiManager) {
-      throw new Error("API Manager is required for SSE transport");
+      throw new Error("API Manager is required for Streamable HTTP transport");
     }
 
     // Create Express app
     const app = this.apiManager.createApp();
 
-    // Setup SSE transport endpoints
-    this.transportManager.setupSseTransport(app);
+    // Setup Streamable HTTP transport endpoints
+    this.transportManager.setupStreamableHttpTransport(app);
 
     // Create HTTP server
     this.httpServer = createServer(app);
@@ -93,11 +93,13 @@ export class ServerManager {
     // Start listening
     await new Promise<void>((resolve, reject) => {
       this.httpServer!.listen(this.port, () => {
+        const address = this.httpServer!.address();
+        const port = typeof address === "string" ? address : address?.port;
         this.logger.info(
-          `MCP Prompts Server running on http://localhost:${this.port}`
+          `MCP Prompts Server running on http://localhost:${port}`
         );
         this.logger.info(
-          `Connect to http://localhost:${this.port}/mcp for MCP connections`
+          `Connect to http://localhost:${port}/mcp for MCP connections`
         );
         resolve();
       });
@@ -106,7 +108,7 @@ export class ServerManager {
         if (error.code === "EADDRINUSE") {
           this.logger.error(
             `Port ${this.port} is already in use. Please choose a different port or stop the other service.`
-          );
+        );
         } else {
           this.logger.error("Server error:", error);
         }
@@ -270,7 +272,7 @@ export class ServerManager {
     return {
       running: this.isRunning(),
       transport: this.transportManager.getTransportType(),
-      port: this.transportManager.isSse() ? this.port : undefined,
+      port: this.transportManager.isSse() ? this.port : undefined, // isSse now includes StreamableHttp
       connections: this.transportManager.isSse()
         ? this.transportManager.getActiveConnectionsCount()
         : undefined,

@@ -18,6 +18,7 @@ import { TextReferenceManager } from "../text-references/index.js";
 import {
   createTransportManager,
   TransportManager,
+  TransportType,
 } from "../transport/index.js";
 
 // Import orchestration modules
@@ -565,44 +566,36 @@ ${attemptedPaths}
       this.logger.info("=== PROMPT LOADING PIPELINE END ===");
 
       // BEGIN ADDED CODE
-      // Propagate updated data to other relevant managers
-      // (This might already be happening if these managers fetch data on demand or are updated elsewhere,
-      // but explicit updates ensure consistency after a hot-reload)
-      if (this.mcpToolsManager) {
-        this.mcpToolsManager.updateData(
-          this.promptsData,
-          this.convertedPrompts,
-          this.categories
-        );
-      }
-      if (this.promptExecutor) {
-        this.promptExecutor.updatePrompts(this.convertedPrompts);
-      }
-      if (this.apiManager) {
-        // apiManager might not exist for stdio
-        this.apiManager.updateData(
-          this.promptsData,
-          this.categories,
-          this.convertedPrompts
-        );
-      }
+    // Propagate updated data to other relevant managers
+    // (This might already be happening if these managers fetch data on demand or are updated elsewhere,
+    // but explicit updates ensure consistency after a hot-reload)
+    if (this.mcpToolsManager) {
+      this.mcpToolsManager.updateData(
+        this.promptsData,
+        this.convertedPrompts,
+        this.categories
+      );
+    }
+    if (this.promptExecutor) {
+      this.promptExecutor.updatePrompts(this.convertedPrompts);
+    }
 
       // CRUCIAL STEP: Re-register all prompts with the McpServer using the newly loaded data
-      if (this.promptManager && this.mcpServer) {
-        this.logger.info(
-          "🔄 Re-registering all prompts with MCP server after hot-reload..."
-        );
-        const registeredCount = await this.promptManager.registerAllPrompts(
-          this.convertedPrompts
-        );
-        this.logger.info(
-          `✅ Successfully re-registered ${registeredCount} prompts.`
-        );
-      } else {
-        this.logger.warn(
-          "⚠️ PromptManager or McpServer not available, skipping re-registration of prompts after hot-reload."
-        );
-      }
+      // if (this.promptManager && this.mcpServer) {
+      //   this.logger.info(
+      //     "🔄 Re-registering all prompts with MCP server after hot-reload..."
+      //   );
+      //   const registeredCount = await this.promptManager.registerAllPrompts(
+      //     this.convertedPrompts
+      //   );
+      //   this.logger.info(
+      //     `✅ Successfully re-registered ${registeredCount} prompts.`
+      //   );
+      // } else {
+      //   this.logger.warn(
+      //     "⚠️ PromptManager or McpServer not available, skipping re-registration of prompts after hot-reload."
+      //   );
+      // }
     } catch (error) {
       this.logger.error("✗ PROMPT LOADING FAILED:");
       this.logger.error("Error details:", error);
@@ -671,8 +664,8 @@ ${attemptedPaths}
       transport
     );
 
-    // Create API manager for SSE transport
-    if (this.transportManager.isSse()) {
+    // Create API manager for Streamable HTTP transport
+    if (this.transportManager.getTransportType() === "streamable-http") {
       this.apiManager = createApiManager(
         this.logger,
         this.configManager,
@@ -753,15 +746,6 @@ ${attemptedPaths}
         this.logger.info("✅ McpToolsManager updated with new data.");
       }
 
-      if (this.apiManager) {
-        // The API manager is only available for the SSE transport.
-        this.apiManager.updateData(
-          this.promptsData,
-          this.categories,
-          this.convertedPrompts
-        );
-        this.logger.info("✅ ApiManager updated with new data.");
-      }
 
       // Step 3: Re-register the newly loaded prompts with the running MCP server instance.
       // This makes the new/updated prompts available for execution immediately.
@@ -892,7 +876,6 @@ ${attemptedPaths}
     moduleStatus.promptExecutor = !!this.promptExecutor;
     moduleStatus.mcpToolsManager = !!this.mcpToolsManager;
     moduleStatus.transportManager = !!this.transportManager;
-    moduleStatus.apiManager = !!this.apiManager;
     moduleStatus.serverManager = !!this.serverManager;
 
     // Check overall health

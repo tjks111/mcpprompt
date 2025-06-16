@@ -2,16 +2,17 @@
   "server": {
     "name": "Claude Custom Prompts",
     "version": "1.0.0",
-    "port": 9090
+    "port": 0
   },
   "prompts": {
     "file": "promptsConfig.json",
     "registrationMode": "name"
   },
   "transports": {
-    "default": "stdio",
+    "default": "streamable-http",
     "sse": { "enabled": false },
-    "stdio": { "enabled": true }
+    "stdio": { "enabled": false },
+    "streamable-http": { "enabled": true }
   },
   "logging": {
     "directory": "./logs",

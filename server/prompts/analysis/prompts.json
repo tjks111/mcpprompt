@@ -12,7 +12,8 @@
           "description": "The content to be analyzed",
           "required": false
         }
-      ]
+      ],
+      "tools": true
     },
     {
       "id": "deep_analysis",

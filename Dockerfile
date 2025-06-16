@@ -5,13 +5,13 @@ FROM node:20-alpine
 WORKDIR /app/server
 
 # Copy package.json and package-lock.json (if available)
-COPY claude-prompts-mcp/server/package*.json ./
+COPY server/package*.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy the rest of the application code
-COPY claude-prompts-mcp/server/ .
+COPY server/ .
 
 # Build the TypeScript project
 RUN npm run build

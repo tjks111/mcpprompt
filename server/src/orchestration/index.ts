@@ -386,6 +386,7 @@ ${attemptedPaths}
       version: config.server.version,
       capabilities: {
         prompts: { listChanged: true },
+        tools: true,
         // TODO: Add other capabilities if supported, e.g., for tools
       },
     });

@@ -11,7 +11,9 @@
   },
   "environment": {
     "NODE_ENV": "production",
-    "PORT": "3000"
+    "PORT": "3000",
+    "NIXPACKS_BUILD_CMD": "npm install && npm run build",
+    "NIXPACKS_START_CMD": "npm run start"
   },
   "name": "claude-prompts-mcp",
   "plugins": [],

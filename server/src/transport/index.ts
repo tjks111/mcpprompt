@@ -150,26 +150,40 @@ export class TransportManager {
     };
 
     app.post("/mcp", async (req: Request, res: Response) => {
+      this.logger.debug(`[StreamableHTTP] Received POST to /mcp`);
+      this.logger.debug(`[StreamableHTTP] Headers: ${JSON.stringify(req.headers)}`);
+      this.logger.debug(`[StreamableHTTP] Body: ${JSON.stringify(req.body)}`);
+      this.logger.debug(`[StreamableHTTP] X-Forwarded-For: ${req.headers['x-forwarded-for']}`);
+      this.logger.debug(`[StreamableHTTP] X-Forwarded-Proto: ${req.headers['x-forwarded-proto']}`);
+
+
       const sessionId = req.headers["mcp-session-id"] as string | undefined;
       let transport: StreamableHTTPServerTransport;
 
       if (sessionId && this.streamableHttpTransports.has(sessionId)) {
+        this.logger.debug(`[StreamableHTTP] Reusing existing session: ${sessionId}`);
         transport = this.streamableHttpTransports.get(sessionId)!;
       } else if (!sessionId && isInitializeRequest(req.body)) {
+        this.logger.debug(`[StreamableHTTP] Creating new session for InitializeRequest.`);
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (newSessionId: string) => {
             this.streamableHttpTransports.set(newSessionId, transport);
+            this.logger.debug(`[StreamableHTTP] New session initialized: ${newSessionId}`);
           },
         });
 
         transport.onclose = () => {
           if (transport.sessionId) {
             this.streamableHttpTransports.delete(transport.sessionId);
+            this.logger.debug(`[StreamableHTTP] Session closed and deleted: ${transport.sessionId}`);
           }
         };
         await this.mcpServer.connect(transport);
       } else {
+        this.logger.warn(`[StreamableHTTP] Bad Request: No valid session ID provided or not an InitializeRequest.`);
+        this.logger.debug(`[StreamableHTTP] Session ID: ${sessionId}`);
+        this.logger.debug(`[StreamableHTTP] Is Initialize Request: ${isInitializeRequest(req.body)}`);
         res.status(400).json({
           jsonrpc: "2.0",
           error: {

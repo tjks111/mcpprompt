@@ -107,6 +107,9 @@ export class ApiManager {
 
     // Tool API routes
     this.setupToolRoutes(app);
+
+    // Combined MCP capabilities endpoint
+    this.setupMcpCapabilitiesRoute(app);
   }
 
   /**
@@ -123,6 +126,39 @@ export class ApiManager {
     app.get("/health", (_req: Request, res: Response) => {
       const config = this.configManager.getConfig();
       res.json({ status: "ok", version: config.server.version });
+    });
+  }
+
+  /**
+   * Setup combined MCP capabilities route
+   */
+  private setupMcpCapabilitiesRoute(app: express.Application): void {
+    app.get("/mcp-capabilities", async (_req: Request, res: Response) => {
+      try {
+        const prompts = this.promptsData.map((prompt) => ({
+          id: prompt.id,
+          name: prompt.name,
+          category: prompt.category,
+          description: prompt.description,
+          arguments: prompt.arguments,
+        }));
+
+        let tools: any[] = [];
+        if (this.mcpToolsManager) {
+          tools = await this.mcpToolsManager.getRegisteredTools();
+        }
+
+        res.json({
+          prompts: prompts,
+          tools: tools,
+        });
+      } catch (error) {
+        this.logger.error("Error fetching MCP capabilities:", error);
+        res.status(500).json({
+          error: "Internal server error",
+          details: error instanceof Error ? error.message : String(error),
+        });
+      }
     });
   }
 

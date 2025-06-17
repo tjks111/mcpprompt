@@ -73,6 +73,25 @@ export class McpToolsManager {
   }
 
   /**
+   * Get a list of all registered tools from the MCP server instance.
+   */
+  public async getRegisteredTools(): Promise<any[]> {
+    // This method retrieves all tools registered with the MCP server.
+    if (!this.mcpServer) {
+      this.logger.warn("MCP Server instance not available in McpToolsManager.");
+      return [];
+    }
+    try {
+      const tools = await this.mcpServer.listTools();
+      this.logger.debug(`Retrieved ${tools.length} registered tools.`);
+      return tools;
+    } catch (error) {
+      this.logger.error("Error listing registered tools:", error);
+      return [];
+    }
+  }
+
+  /**
    * Update internal data references
    */
   updateData(
